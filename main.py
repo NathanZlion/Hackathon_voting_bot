@@ -20,6 +20,7 @@ from typing import Final
 
 from telegram import User
 import config
+import constant
 import database
 
 
@@ -37,36 +38,20 @@ except Exception as e:
 
 @router.message(CommandStart())
 async def command_start(message: Message ) -> None:
-    """checks if the user has already been registered in the database"""
     user = message.from_user
+    _register_user_if_not_exists(message.from_user)
 
     if not user:
         await message.answer("Something went wrong!")
         return
-
-    logging.log(1, user.first_name)
 
     await message.answer(
         f"Hi {user.full_name}, Welcome to Hackathon Voting Bot.  Please select one of the following options: ",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [KeyboardButton(text="Vote"), KeyboardButton(text="Projects")],
-                [KeyboardButton(text="About Hackathon")],
+                [KeyboardButton(text="About Hackathon"), KeyboardButton(text="Status")],
             ],
-            # q: How do I nest the buttons?
-            # a: You can nest the buttons by creating a list of lists
-            # q: how?
-            # a: You can create a list of lists like this:
-            # keyboard=[
-            #     [KeyboardButton(text="Vote")],
-            #     [KeyboardButton(text="Projects")],
-            #     [KeyboardButton(text="About Hackathon")],
-            # ],
-            # q: How do I make the vote and projects buttons nested to appear side by side on the same row?
-            # a: You can create a list of lists like this:
-            # keyboard=[
-            #     [KeyboardButton(text="Vote"), KeyboardButton(text="Projects")],
-
             resize_keyboard=True,
         )
     )
@@ -82,24 +67,53 @@ async def _register_user_if_not_exists(user: User):
         )
 
 
+@router.message(F.text == "Back")
+async def back(message: Message) -> None:
+    _register_user_if_not_exists(message.from_user)
+    user = message.from_user
+
+    if not user:
+        await message.answer("Something went wrong!")
+        return
+
+    await message.answer(
+        f"Hi {user.full_name}, Welcome to Hackathon Voting Bot.  Please select one of the following options: ",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="Vote"), KeyboardButton(text="Projects")],
+                [KeyboardButton(text="About Hackathon"), KeyboardButton(text="Status")],
+            ],
+            resize_keyboard=True,
+        )
+    )
+
+
 @router.message(F.text == "Vote")
 async def register(message: Message) -> None:
     user_id = message.from_user.id
 
     await _register_user_if_not_exists(message.from_user)
 
-    db.get_vote_by_user_id(user_id)
+    project = db.get_vote_by_user_id(user_id)
+    
+    print(project["project_id"] if project else "None")
+    print(constant.projects[1]["name"])
+    text = "Please select a project to vote for."
+    if project:
+        text = f"You have already voted for {project['project_id']}, Only vote if you want to change your vote."
+    
+    keyboard = []
+    keyboard.append([KeyboardButton(text="Back")])
+    for i in range(0, len(constant.projects) - 1, 2):
+        keyboard.append([
+            KeyboardButton(text= constant.projects[i]["name"]),
+            KeyboardButton(text= constant.projects[i + 1]["name"])
+        ])
 
     await message.answer(
-        "Please select a project to vote for",
+        text=text,
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text="Project 1")],
-                [KeyboardButton(text="Project 2")],
-                [KeyboardButton(text="Project 3")],
-                [KeyboardButton(text="Project 4")],
-                [KeyboardButton(text="Project 5")],
-            ],
+            keyboard=keyboard,
             resize_keyboard=True,
         )
     )
@@ -124,8 +138,21 @@ async def show_projects(message: Message) -> None:
 
 @router.message(F.text == "About Hackathon")
 async def about_hackathon(message: Message) -> None:
-    await message.answer(
-        "This is a hackathon bot"
+    await message.answer("""
+        🚀 Welcome to the A2SV Expo Bot! 🚀
+We're thrilled to have you here! 🌍✨
+
+What can you do?
+🔍 Explore A2SV:
+Learn more about A2SV, its mission, and find important links. Discover how we're empowering African tech talent and fostering innovation.
+
+🏆 Project Voting:
+Vote for your favorite projects at the A2SV Expo! Your input helps recognize outstanding work. Select "Vote for Projects" to get started.
+
+🗣 Give Feedback:
+Share your thoughts on the expo and projects. Your feedback is invaluable! Select "Give Feedback" to tell us about your experience.
+
+Gear up for an electrifying adventure of innovation and teamwork! 🌟🚀"""
     )
 
 
@@ -134,12 +161,32 @@ async def about_hackathon(message: Message) -> None:
 async def vote_for_project(message: Message) -> None:
     project = message.text
 
+    # validate the project
+    if project not in [project["name"] for project in constant.projects]:
+        await message.answer("Invalid project")
+        return
+
     user_id = message.from_user.id
 
+    project_id = db.get_vote_by_user_id(user_id)
+    
+    db.retract_vote(user_id)
     db.add_new_vote(user_id, project)
 
     await message.answer(
-        f"Your vote for {project} has been registered"
+        
+        f""" 🎉 Your vote for {project} has been registered! 🎉 \n
+        Thank you! 🙏🏽
+        """ if project_id != project else f"Your vote for {project_id} has retracted and you have voted for {project} instead",
+
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text="Back"),
+                ]
+            ],
+            resize_keyboard=True,
+        )
     )
 
 
@@ -152,6 +199,25 @@ async def retract_vote(message: Message) -> None:
     await message.answer(
         "Your vote for has been retracted"
     )
+
+def _is_voting_open():
+    return True
+
+@router.message(F.text == "Status")
+async def voting_status(message: Message) -> None:
+    user = message.from_user
+    if not user.id in config.admin_ids:
+        await message.answer("You are not authorized to view the voting status. Only admins can view the voting status")
+        return 
+
+    text = "Voting Status : Open \n" if _is_voting_open() else "Voting Status : Closed \n"
+
+    for project in constant.projects:
+        text += f"{project['name']} : {db.get_votes_by_project_id(project['name'])} \n"
+    
+    text += "Total Votes : " + str(db.get_total_votes())
+    
+    await message.answer(text)
 
 
 async def main():
