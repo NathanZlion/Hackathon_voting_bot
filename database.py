@@ -13,7 +13,6 @@ class Database:
 
         self.user_collection = self.db["user"]
         self.vote_collection = self.db["vote"]
-        self.project_collection = self.db["project"]
 
     ####################################################################
     # User functions
@@ -85,6 +84,14 @@ class Database:
         return self.vote_collection.find_one({"user_id": user_id})
 
     
-    def get_vote_by_project_id(self, project_id: int):
-        return self.vote_collection.find_one({"project_id": project_id})
+    def get_votes_by_project_id(self, project_id: int):
+        return self.vote_collection.count_documents({"project_id": project_id})
+
+    
+    def get_total_votes(self):
+        return self.vote_collection.count_documents({})
+
+
+    def retract_vote(self, user_id: int):
+        self.vote_collection.delete_many({"user_id": user_id})
 
