@@ -43,26 +43,34 @@ MENUS : List[Menu] = [
 projects : List[Menu] = [
     {
         "name": "Project 1",
+        "description": "This is a project description"
     },
     {
         "name": "Project 2",
+        "description": "This is a project description"
     },
     {
         "name": "Project 3",
+        "description": "This is a project description"
     },
     {
         "name": "Project 4",
+        "description": "This is a project description"
     },
     {
         "name": "Project 5",
+        "description": "This is a project description"
     },
     {
         "name": "Project 6",
+        "description": "This is a project description"
     },
     {
         "name": "Project 7",
+        "description": "This is a project description"
     },
     {
         "name": "Project 8",
+        "description": "This is a project description"
     },
 ]
