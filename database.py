@@ -49,15 +49,6 @@ class Database:
             self.user_collection.insert_one(user_dict)
 
 
-    def get_user_attribute(self, user_id: int, key: str):
-        self.check_if_user_exists(user_id, raise_exception=True)
-        user_dict = self.user_collection.find_one({"_id": user_id})
-
-        if key not in user_dict:
-            return None
-
-        return user_dict[key]
-
     def set_user_attribute(self, user_id: int, key: str, value: Any):
         self.check_if_user_exists(user_id, raise_exception=True)
         self.user_collection.update_one({"_id": user_id}, {"$set": {key: value}})
