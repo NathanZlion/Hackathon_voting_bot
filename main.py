@@ -305,7 +305,7 @@ if __name__ == "__main__":
         level=logging.INFO
     )
     TOKEN : Final = getenv("BOT_TOKEN")
-    PORT : Final = getenv("PORT") or "8000"
+    PORT : Final = getenv("PORT") or "8080"
     WEBHOOK_URL = getenv("WEBHOOK_URL")
 
     application = ApplicationBuilder().token(TOKEN).build()
