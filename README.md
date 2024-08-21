@@ -1,8 +1,28 @@
 # A2SV AI for Impact Hackathon voting bot
 This is a repository for telegram bot that collects voting data for hackathon projects.
 
-## Getting Started
-### Method One : Manual
+# Getting Started
+## Method One : Manual
+
+> Clone the repository
+```bash
+git clone https://github.com/NathanZlion/Hackathon_voting_bot.git
+```
+
+or
+
+```bash
+git clone git@github.com:NathanZlion/Hackathon_voting_bot.git
+```
+
+---
+
+> Go to the project and Activate your virtual environment
+```bash
+python3 -m venv venv
+source ./venv/bin/activate
+```
+
 > Install the requirements.
 ```bash
 pip install -r requirements.txt
@@ -24,7 +44,7 @@ WEBHOOK_URL=<Webhook url>
 python3 main.py
 ```
 
-### Method Two : Docker (Recommended)
+## Method Two : Docker (Recommended)
 > Build the docker image
 ```bash
 docker build -t a2sv-ai-for-impact-hackathon-voting-bot .
